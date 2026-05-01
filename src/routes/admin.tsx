@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Outlet, Link, useNavigate, useLocation } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
   LayoutDashboard,
@@ -31,11 +31,22 @@ const NAV: NavItem[] = [
 function AdminLayout() {
   const { user, loading, signOut, role } = useAuth();
   const nav = useNavigate();
+  const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  // Public admin sub-routes (login, forgot-password, reset) bypass the gated layout.
+  const isPublicAdminRoute =
+    location.pathname === "/admin/login" ||
+    location.pathname === "/admin/forgot-password";
+
   useEffect(() => {
-    if (!loading && !user) nav({ to: "/admin/login" });
-  }, [user, loading, nav]);
+    if (isPublicAdminRoute) return;
+    if (!loading && !user) nav({ to: "/admin/login", replace: true });
+  }, [user, loading, nav, isPublicAdminRoute]);
+
+  if (isPublicAdminRoute) {
+    return <Outlet />;
+  }
 
   if (loading || !user) {
     return (

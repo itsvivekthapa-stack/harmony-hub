@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth-context";
-import { inviteAdmin, listAdmins, changeAdminRole, removeAdmin } from "@/server/admins.functions";
+import { createAdmin, listAdmins, changeAdminRole, removeAdmin } from "@/server/admins.functions";
 import { format } from "date-fns";
 
 export const Route = createFileRoute("/admin/admins")({
@@ -36,8 +36,10 @@ function ManageAdmins() {
   const [admins, setAdmins] = useState<Admin[]>([]);
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [displayName, setDisplayName] = useState("");
   const [newRole, setNewRole] = useState<"admin" | "super_admin">("admin");
-  const [inviting, setInviting] = useState(false);
+  const [creating, setCreating] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -48,16 +50,19 @@ function ManageAdmins() {
   };
   useEffect(() => { load(); }, []);
 
-  const handleInvite = async (e: React.FormEvent) => {
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    setInviting(true);
+    if (password.length < 8) { toast.error("Password must be at least 8 characters"); return; }
+    setCreating(true);
     try {
-      const res = await inviteAdmin({ data: { email, role: newRole } });
+      const res = await createAdmin({
+        data: { email, password, display_name: displayName || undefined, role: newRole },
+      });
       if (!res.ok) { toast.error(res.error); return; }
-      toast.success(res.message ?? "Invitation sent");
-      setEmail("");
+      toast.success(res.message ?? "Admin created");
+      setEmail(""); setPassword(""); setDisplayName("");
       load();
-    } finally { setInviting(false); }
+    } finally { setCreating(false); }
   };
 
   const handleRoleChange = async (uid: string, r: "admin" | "super_admin") => {
@@ -77,6 +82,9 @@ function ManageAdmins() {
       <header className="mb-6">
         <p className="text-xs font-medium uppercase tracking-[0.24em] text-muted-foreground">Admin</p>
         <h1 className="mt-1 font-serif text-3xl font-semibold tracking-tight">Manage Admins</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Create admin accounts directly with an email and password — no email invite required.
+        </p>
       </header>
 
       {!isSuper && (
@@ -88,11 +96,20 @@ function ManageAdmins() {
 
       {isSuper && (
         <form
-          onSubmit={handleInvite}
-          className="mb-8 flex flex-col gap-3 rounded-2xl border border-border bg-card p-5 shadow-soft sm:flex-row sm:items-end sm:p-6"
+          onSubmit={handleCreate}
+          className="mb-8 grid gap-3 rounded-2xl border border-border bg-card p-5 shadow-soft sm:grid-cols-2 sm:p-6"
         >
-          <div className="flex-1 space-y-1.5">
-            <Label htmlFor="email">Invite by email</Label>
+          <div className="space-y-1.5 sm:col-span-2">
+            <Label htmlFor="dname">Display name (optional)</Label>
+            <Input
+              id="dname"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              placeholder="e.g. Mr. Sharma"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="email">Email</Label>
             <Input
               id="email"
               type="email"
@@ -102,7 +119,19 @@ function ManageAdmins() {
               placeholder="teacher@kvsrodelhi.in"
             />
           </div>
-          <div className="space-y-1.5 sm:w-44">
+          <div className="space-y-1.5">
+            <Label htmlFor="pwd">Password</Label>
+            <Input
+              id="pwd"
+              type="text"
+              required
+              minLength={8}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="At least 8 characters"
+            />
+          </div>
+          <div className="space-y-1.5">
             <Label>Role</Label>
             <Select value={newRole} onValueChange={(v: "admin" | "super_admin") => setNewRole(v)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
@@ -112,10 +141,12 @@ function ManageAdmins() {
               </SelectContent>
             </Select>
           </div>
-          <Button type="submit" disabled={inviting} className="bg-primary text-primary-foreground hover:opacity-90">
-            {inviting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UserPlus className="mr-2 h-4 w-4" />}
-            Invite
-          </Button>
+          <div className="flex items-end">
+            <Button type="submit" disabled={creating} className="w-full bg-primary text-primary-foreground hover:opacity-90">
+              {creating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UserPlus className="mr-2 h-4 w-4" />}
+              Create admin
+            </Button>
+          </div>
         </form>
       )}
 
