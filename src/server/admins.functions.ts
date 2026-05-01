@@ -3,14 +3,16 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
-const InviteSchema = z.object({
+const CreateSchema = z.object({
   email: z.string().email().max(254),
+  password: z.string().min(8).max(128),
+  display_name: z.string().trim().max(80).optional(),
   role: z.enum(["admin", "super_admin"]),
 });
 
-export const inviteAdmin = createServerFn({ method: "POST" })
+export const createAdmin = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => InviteSchema.parse(d))
+  .inputValidator((d: unknown) => CreateSchema.parse(d))
   .handler(async ({ data, context }) => {
     const { supabase: userClient, userId } = context;
 
@@ -21,39 +23,42 @@ export const inviteAdmin = createServerFn({ method: "POST" })
       .eq("user_id", userId);
     const isSuper = (roles ?? []).some((r) => r.role === "super_admin");
     if (!isSuper) {
-      return { ok: false as const, error: "Only super admins can invite admins." };
+      return { ok: false as const, error: "Only super admins can create admins." };
     }
 
-    // Invite via admin API (sends email)
-    const origin = process.env.SITE_URL || "";
-    const { data: invited, error: invErr } = await supabaseAdmin.auth.admin.inviteUserByEmail(
-      data.email,
-      origin ? { redirectTo: `${origin}/reset-password` } : undefined,
-    );
-    if (invErr || !invited?.user) {
-      // Fallback: try to find existing user
+    // Create the user with a confirmed email + password (no email sending required)
+    const { data: created, error: createErr } = await supabaseAdmin.auth.admin.createUser({
+      email: data.email,
+      password: data.password,
+      email_confirm: true,
+      user_metadata: { display_name: data.display_name || data.email.split("@")[0] },
+    });
+
+    let targetUserId = created?.user?.id;
+
+    if (createErr || !targetUserId) {
+      // If the user already exists, fall back to looking them up
       const { data: list } = await supabaseAdmin.auth.admin.listUsers();
       const existing = list?.users.find((u) => u.email?.toLowerCase() === data.email.toLowerCase());
       if (!existing) {
-        return { ok: false as const, error: invErr?.message ?? "Could not invite user." };
+        return { ok: false as const, error: createErr?.message ?? "Could not create user." };
       }
-      // Just (re)assign role below
-      await supabaseAdmin.from("user_roles").upsert(
-        { user_id: existing.id, role: data.role },
-        { onConflict: "user_id,role" },
-      );
-      return { ok: true as const, message: "User already existed — role updated." };
+      targetUserId = existing.id;
+      // Optionally update password if user already exists
+      await supabaseAdmin.auth.admin.updateUserById(existing.id, {
+        password: data.password,
+        email_confirm: true,
+      });
     }
 
-    // Trigger created an admin row by default; if super_admin requested, add it
-    if (data.role === "super_admin") {
-      await supabaseAdmin.from("user_roles").upsert(
-        { user_id: invited.user.id, role: "super_admin" },
-        { onConflict: "user_id,role" },
-      );
-    }
+    // Reset roles to exactly the requested role
+    await supabaseAdmin.from("user_roles").delete().eq("user_id", targetUserId);
+    const { error: roleErr } = await supabaseAdmin
+      .from("user_roles")
+      .insert({ user_id: targetUserId, role: data.role });
+    if (roleErr) return { ok: false as const, error: roleErr.message };
 
-    return { ok: true as const, message: "Invitation sent." };
+    return { ok: true as const, message: "Admin account created." };
   });
 
 const ChangeRoleSchema = z.object({
