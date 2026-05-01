@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth-context";
-import { inviteAdmin, listAdmins, changeAdminRole, removeAdmin } from "@/server/admins.functions";
+import { createAdmin, listAdmins, changeAdminRole, removeAdmin } from "@/server/admins.functions";
 import { format } from "date-fns";
 
 export const Route = createFileRoute("/admin/admins")({
