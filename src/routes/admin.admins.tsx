@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Loader2, UserPlus, Trash2, Shield } from "lucide-react";
+import { Loader2, UserPlus, Trash2, Shield, KeyRound } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -12,9 +12,18 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth-context";
-import { createAdmin, listAdmins, changeAdminRole, removeAdmin } from "@/server/admins.functions";
+import {
+  createAdmin,
+  listAdmins,
+  changeAdminRole,
+  removeAdmin,
+  resetAdminPassword,
+} from "@/server/admins.functions";
 import { format } from "date-fns";
 
 export const Route = createFileRoute("/admin/admins")({
@@ -189,6 +198,7 @@ function ManageAdmins() {
                         <SelectItem value="super_admin">Super admin</SelectItem>
                       </SelectContent>
                     </Select>
+                    <ResetPasswordDialog adminId={a.id} adminEmail={a.email ?? ""} />
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <Button variant="outline" size="sm" className="text-destructive hover:bg-destructive hover:text-destructive-foreground">
@@ -216,5 +226,49 @@ function ManageAdmins() {
         )}
       </div>
     </div>
+  );
+}
+
+function ResetPasswordDialog({ adminId, adminEmail }: { adminId: string; adminEmail: string }) {
+  const [open, setOpen] = useState(false);
+  const [pwd, setPwd] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (pwd.length < 8) return toast.error("Password must be at least 8 characters");
+    setSubmitting(true);
+    const res = await resetAdminPassword({ data: { user_id: adminId, password: pwd } });
+    setSubmitting(false);
+    if (!res.ok) return toast.error(res.error);
+    toast.success("Password reset");
+    setPwd("");
+    setOpen(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm">
+          <KeyRound className="mr-1.5 h-3.5 w-3.5" /> Reset password
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Reset password</DialogTitle>
+          <DialogDescription>Set a new password for {adminEmail}.</DialogDescription>
+        </DialogHeader>
+        <form onSubmit={submit} className="space-y-3">
+          <Label htmlFor="np">New password</Label>
+          <Input id="np" type="text" minLength={8} value={pwd} onChange={(e) => setPwd(e.target.value)} placeholder="At least 8 characters" />
+          <DialogFooter>
+            <Button type="submit" disabled={submitting} className="bg-primary text-primary-foreground hover:opacity-90">
+              {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Update password
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
