@@ -10,7 +10,6 @@ type AuthCtx = {
   role: AppRole | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
-  signUpFirstAdmin: (email: string, password: string, displayName: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   refreshRole: () => Promise<void>;
 };
@@ -24,31 +23,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const loadRole = async (uid: string | undefined) => {
-    if (!uid) { setRole(null); return; }
-    const { data } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", uid)
-      .order("role", { ascending: true });
-    if (!data || data.length === 0) { setRole(null); return; }
-    const roles = data.map(r => r.role);
-    setRole(roles.includes("super_admin") ? "super_admin" : "admin");
+    if (!uid) {
+      setRole(null);
+      return;
+    }
+    try {
+      const { data } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", uid);
+      if (!data || data.length === 0) {
+        setRole(null);
+        return;
+      }
+      const roles = data.map((r) => r.role);
+      setRole(roles.includes("super_admin") ? "super_admin" : "admin");
+    } catch {
+      setRole(null);
+    }
   };
 
   useEffect(() => {
-    // 1. Listener first
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
       setSession(s);
       setUser(s?.user ?? null);
-      // Defer role fetch
       if (s?.user) {
-        setTimeout(() => { loadRole(s.user.id); }, 0);
+        setTimeout(() => {
+          loadRole(s.user.id);
+        }, 0);
       } else {
         setRole(null);
       }
     });
-    // 2. Initial session
-    supabase.auth.getSession()
+    supabase.auth
+      .getSession()
       .then(({ data: { session: s } }) => {
         setSession(s);
         setUser(s?.user ?? null);
@@ -64,28 +72,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: error?.message ?? null };
   };
 
-  const signUpFirstAdmin: AuthCtx["signUpFirstAdmin"] = async (email, password, displayName) => {
-    const redirectUrl = `${window.location.origin}/admin`;
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: { display_name: displayName },
-      },
-    });
-    return { error: error?.message ?? null };
-  };
-
   const signOut = async () => {
     await supabase.auth.signOut();
     setRole(null);
+    setUser(null);
+    setSession(null);
   };
 
-  const refreshRole = async () => { if (user?.id) await loadRole(user.id); };
+  const refreshRole = async () => {
+    if (user?.id) await loadRole(user.id);
+  };
 
   return (
-    <Ctx.Provider value={{ user, session, role, loading, signIn, signUpFirstAdmin, signOut, refreshRole }}>
+    <Ctx.Provider value={{ user, session, role, loading, signIn, signOut, refreshRole }}>
       {children}
     </Ctx.Provider>
   );

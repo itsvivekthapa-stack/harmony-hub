@@ -53,6 +53,10 @@ function ForgotPassword() {
             ← Back to sign in
           </Link>
         </form>
+        <p className="mt-4 rounded-xl border border-border bg-muted/40 p-4 text-xs text-muted-foreground">
+          <strong className="font-medium text-foreground">Can't receive emails?</strong> Ask your
+          super admin to reset your password directly from the Manage Admins page.
+        </p>
       </section>
     </PageShell>
   );
