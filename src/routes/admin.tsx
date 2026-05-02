@@ -6,6 +6,7 @@ import {
   ListChecks,
   Users,
   UserCircle2,
+  Activity,
   LogOut,
   Menu,
   X,
@@ -25,6 +26,7 @@ const NAV: NavItem[] = [
   { to: "/admin/upload", label: "Upload Arrangement", icon: Upload },
   { to: "/admin/arrangements", label: "Manage Arrangements", icon: ListChecks },
   { to: "/admin/admins", label: "Manage Admins", icon: Users },
+  { to: "/admin/activity", label: "Activity Logs", icon: Activity },
   { to: "/admin/profile", label: "Profile", icon: UserCircle2 },
 ];
 
