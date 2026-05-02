@@ -20,6 +20,7 @@ import { Route as AdminLoginRouteImport } from './routes/admin.login'
 import { Route as AdminForgotPasswordRouteImport } from './routes/admin.forgot-password'
 import { Route as AdminArrangementsRouteImport } from './routes/admin.arrangements'
 import { Route as AdminAdminsRouteImport } from './routes/admin.admins'
+import { Route as AdminActivityRouteImport } from './routes/admin.activity'
 
 const StudentRoute = StudentRouteImport.update({
   id: '/student',
@@ -76,12 +77,18 @@ const AdminAdminsRoute = AdminAdminsRouteImport.update({
   path: '/admins',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminActivityRoute = AdminActivityRouteImport.update({
+  id: '/activity',
+  path: '/activity',
+  getParentRoute: () => AdminRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/reset-password': typeof ResetPasswordRoute
   '/student': typeof StudentRoute
+  '/admin/activity': typeof AdminActivityRoute
   '/admin/admins': typeof AdminAdminsRoute
   '/admin/arrangements': typeof AdminArrangementsRoute
   '/admin/forgot-password': typeof AdminForgotPasswordRoute
@@ -94,6 +101,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/reset-password': typeof ResetPasswordRoute
   '/student': typeof StudentRoute
+  '/admin/activity': typeof AdminActivityRoute
   '/admin/admins': typeof AdminAdminsRoute
   '/admin/arrangements': typeof AdminArrangementsRoute
   '/admin/forgot-password': typeof AdminForgotPasswordRoute
@@ -108,6 +116,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/reset-password': typeof ResetPasswordRoute
   '/student': typeof StudentRoute
+  '/admin/activity': typeof AdminActivityRoute
   '/admin/admins': typeof AdminAdminsRoute
   '/admin/arrangements': typeof AdminArrangementsRoute
   '/admin/forgot-password': typeof AdminForgotPasswordRoute
@@ -123,6 +132,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/reset-password'
     | '/student'
+    | '/admin/activity'
     | '/admin/admins'
     | '/admin/arrangements'
     | '/admin/forgot-password'
@@ -135,6 +145,7 @@ export interface FileRouteTypes {
     | '/'
     | '/reset-password'
     | '/student'
+    | '/admin/activity'
     | '/admin/admins'
     | '/admin/arrangements'
     | '/admin/forgot-password'
@@ -148,6 +159,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/reset-password'
     | '/student'
+    | '/admin/activity'
     | '/admin/admins'
     | '/admin/arrangements'
     | '/admin/forgot-password'
@@ -243,10 +255,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAdminsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/activity': {
+      id: '/admin/activity'
+      path: '/activity'
+      fullPath: '/admin/activity'
+      preLoaderRoute: typeof AdminActivityRouteImport
+      parentRoute: typeof AdminRoute
+    }
   }
 }
 
 interface AdminRouteChildren {
+  AdminActivityRoute: typeof AdminActivityRoute
   AdminAdminsRoute: typeof AdminAdminsRoute
   AdminArrangementsRoute: typeof AdminArrangementsRoute
   AdminForgotPasswordRoute: typeof AdminForgotPasswordRoute
@@ -257,6 +277,7 @@ interface AdminRouteChildren {
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminActivityRoute: AdminActivityRoute,
   AdminAdminsRoute: AdminAdminsRoute,
   AdminArrangementsRoute: AdminArrangementsRoute,
   AdminForgotPasswordRoute: AdminForgotPasswordRoute,

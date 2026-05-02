@@ -36,7 +36,7 @@ function AdminLayout() {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  // Public admin sub-routes (login, forgot-password, reset) bypass the gated layout.
+  // Public admin sub-routes (login, forgot-password) bypass the gated layout.
   const isPublicAdminRoute =
     location.pathname === "/admin/login" ||
     location.pathname === "/admin/forgot-password";
@@ -45,6 +45,21 @@ function AdminLayout() {
     if (isPublicAdminRoute) return;
     if (!loading && !user) nav({ to: "/admin/login", replace: true });
   }, [user, loading, nav, isPublicAdminRoute]);
+
+  // If signed in but no admin role at all, kick them out.
+  useEffect(() => {
+    if (isPublicAdminRoute) return;
+    if (!loading && user && role === null) {
+      // Defer one tick to let role load attempt complete on first render
+      const t = setTimeout(async () => {
+        if (!loading && user && role === null) {
+          await signOut();
+          nav({ to: "/admin/login", replace: true });
+        }
+      }, 600);
+      return () => clearTimeout(t);
+    }
+  }, [user, role, loading, nav, isPublicAdminRoute, signOut]);
 
   if (isPublicAdminRoute) {
     return <Outlet />;
