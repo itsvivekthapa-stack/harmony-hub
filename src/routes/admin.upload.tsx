@@ -63,6 +63,13 @@ function UploadPage() {
         uploaded_by: user.id,
       });
       if (insErr) throw insErr;
+      await supabase.from("activity_logs").insert({
+        actor_id: user.id,
+        actor_email: user.email ?? null,
+        action: active ? "arrangement.uploaded" : "arrangement.uploaded",
+        target: title.trim(),
+        details: { active, date, file_type: isImage ? "image" : "pdf" },
+      });
       toast.success("Arrangement uploaded");
       nav({ to: "/admin/arrangements" });
     } catch (e: any) {

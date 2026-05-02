@@ -46,15 +46,29 @@ function ManageArrangements() {
   };
   useEffect(() => { load(); }, []);
 
-  const setActive = async (id: string) => {
+  const setActive = async (id: string, title: string) => {
     const { error } = await supabase.from("arrangements").update({ is_active: true }).eq("id", id);
     if (error) return toast.error(error.message);
+    const { data: u } = await supabase.auth.getUser();
+    await supabase.from("activity_logs").insert({
+      actor_id: u.user?.id ?? null,
+      actor_email: u.user?.email ?? null,
+      action: "arrangement.activated",
+      target: title,
+    });
     toast.success("Set as active");
     load();
   };
-  const archive = async (id: string) => {
+  const archive = async (id: string, title: string) => {
     const { error } = await supabase.from("arrangements").update({ is_active: false }).eq("id", id);
     if (error) return toast.error(error.message);
+    const { data: u } = await supabase.auth.getUser();
+    await supabase.from("activity_logs").insert({
+      actor_id: u.user?.id ?? null,
+      actor_email: u.user?.email ?? null,
+      action: "arrangement.archived",
+      target: title,
+    });
     toast.success("Archived");
     load();
   };
@@ -62,6 +76,13 @@ function ManageArrangements() {
     await supabase.storage.from("arrangements").remove([row.file_path]);
     const { error } = await supabase.from("arrangements").delete().eq("id", row.id);
     if (error) return toast.error(error.message);
+    const { data: u } = await supabase.auth.getUser();
+    await supabase.from("activity_logs").insert({
+      actor_id: u.user?.id ?? null,
+      actor_email: u.user?.email ?? null,
+      action: "arrangement.deleted",
+      target: row.title,
+    });
     toast.success("Deleted");
     load();
   };
@@ -140,11 +161,11 @@ function ManageArrangements() {
                     </a>
                   </Button>
                   {r.is_active ? (
-                    <Button variant="outline" size="sm" onClick={() => archive(r.id)}>
+                    <Button variant="outline" size="sm" onClick={() => archive(r.id, r.title)}>
                       <Archive className="mr-1.5 h-3.5 w-3.5" /> Archive
                     </Button>
                   ) : (
-                    <Button variant="outline" size="sm" onClick={() => setActive(r.id)}>
+                    <Button variant="outline" size="sm" onClick={() => setActive(r.id, r.title)}>
                       <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" /> Set active
                     </Button>
                   )}
