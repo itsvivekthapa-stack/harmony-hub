@@ -37,7 +37,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
       const roles = data.map((r) => r.role);
-      setRole(roles.includes("super_admin") ? "super_admin" : "admin");
+      if (roles.includes("super_admin")) setRole("super_admin");
+      else if (roles.includes("admin")) setRole("admin");
+      else if (roles.includes("pending_admin" as any)) setRole("pending_admin");
+      else setRole(null);
     } catch {
       setRole(null);
     }
