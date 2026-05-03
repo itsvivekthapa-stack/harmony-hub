@@ -82,19 +82,23 @@ function AdminLayout() {
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      {/* Mobile top bar */}
-      <div className="flex items-center justify-between border-b border-border bg-card px-4 py-3 lg:hidden">
+      {/* Global top bar — always visible: Student / Admin switch */}
+      <div className="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-card/95 px-4 py-2 backdrop-blur">
         <Link to="/admin" className="flex items-center gap-2">
           <img src={logo} alt="KVS" className="h-7 w-7 object-contain" />
-          <span className="font-serif text-base font-semibold">KVS Arrangement</span>
+          <span className="font-serif text-sm font-semibold">KVS Arrangement</span>
         </Link>
-        <button
-          aria-label="Toggle menu"
-          onClick={() => setMobileOpen((v) => !v)}
-          className="rounded-md p-2 hover:bg-accent"
-        >
-          {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </button>
+        <nav className="flex items-center gap-1 text-sm">
+          <Link to="/student" className="rounded-md px-3 py-1.5 text-foreground/80 hover:bg-accent">Student</Link>
+          <Link to="/admin" className="rounded-md bg-primary px-3 py-1.5 text-primary-foreground">Admin</Link>
+          <button
+            aria-label="Toggle menu"
+            onClick={() => setMobileOpen((v) => !v)}
+            className="ml-1 rounded-md p-1.5 hover:bg-accent lg:hidden"
+          >
+            {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+          </button>
+        </nav>
       </div>
 
       <div className="flex flex-1">
