@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
-export type AppRole = "super_admin" | "admin";
+export type AppRole = "super_admin" | "admin" | "pending_admin";
 
 type AuthCtx = {
   user: User | null;
@@ -37,7 +37,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
       const roles = data.map((r) => r.role);
-      setRole(roles.includes("super_admin") ? "super_admin" : "admin");
+      if (roles.includes("super_admin")) setRole("super_admin");
+      else if (roles.includes("admin")) setRole("admin");
+      else if (roles.includes("pending_admin" as any)) setRole("pending_admin");
+      else setRole(null);
     } catch {
       setRole(null);
     }
@@ -47,21 +50,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
       setSession(s);
       setUser(s?.user ?? null);
-      if (s?.user) {
-        setTimeout(() => {
-          loadRole(s.user.id);
-        }, 0);
-      } else {
-        setRole(null);
-      }
+      if (s?.user) loadRole(s.user.id);
+      else setRole(null);
     });
     supabase.auth
       .getSession()
-      .then(({ data: { session: s } }) => {
+      .then(async ({ data: { session: s } }) => {
         setSession(s);
         setUser(s?.user ?? null);
-        if (s?.user) loadRole(s.user.id).finally(() => setLoading(false));
-        else setLoading(false);
+        if (s?.user) await loadRole(s.user.id);
+        setLoading(false);
       })
       .catch(() => setLoading(false));
     return () => sub.subscription.unsubscribe();

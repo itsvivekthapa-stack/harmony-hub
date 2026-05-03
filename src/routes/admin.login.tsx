@@ -183,12 +183,12 @@ function AdminLogin() {
           )}
         </form>
 
-        <Link
-          to="/"
-          className="mt-6 text-xs text-muted-foreground underline-offset-2 hover:underline"
-        >
-          ← Back to home
-        </Link>
+        <div className="mt-6 flex items-center gap-4 text-xs text-muted-foreground">
+          <Link to="/" className="underline-offset-2 hover:underline">← Back to home</Link>
+          {!needsBootstrap && !checking && (
+            <Link to="/admin/signup" className="underline-offset-2 hover:underline">Request access</Link>
+          )}
+        </div>
       </section>
     </PageShell>
   );
