@@ -36,30 +36,15 @@ function AdminLayout() {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  // Public admin sub-routes (login, forgot-password) bypass the gated layout.
   const isPublicAdminRoute =
     location.pathname === "/admin/login" ||
+    location.pathname === "/admin/signup" ||
     location.pathname === "/admin/forgot-password";
 
   useEffect(() => {
     if (isPublicAdminRoute) return;
     if (!loading && !user) nav({ to: "/admin/login", replace: true });
   }, [user, loading, nav, isPublicAdminRoute]);
-
-  // If signed in but no admin role at all, kick them out.
-  useEffect(() => {
-    if (isPublicAdminRoute) return;
-    if (!loading && user && role === null) {
-      // Defer one tick to let role load attempt complete on first render
-      const t = setTimeout(async () => {
-        if (!loading && user && role === null) {
-          await signOut();
-          nav({ to: "/admin/login", replace: true });
-        }
-      }, 600);
-      return () => clearTimeout(t);
-    }
-  }, [user, role, loading, nav, isPublicAdminRoute, signOut]);
 
   if (isPublicAdminRoute) {
     return <Outlet />;
@@ -69,6 +54,23 @@ function AdminLayout() {
     return (
       <div className="flex min-h-screen items-center justify-center text-muted-foreground">
         Loading…
+      </div>
+    );
+  }
+
+  // Pending or no role → friendly screen, not blank
+  if (role === null || role === ("pending_admin" as any)) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background px-4 text-center">
+        <img src={logo} alt="KVS" className="h-12 w-12 object-contain" />
+        <h1 className="font-serif text-2xl font-semibold">Awaiting approval</h1>
+        <p className="max-w-md text-sm text-muted-foreground">
+          Your admin account is pending approval from a super admin. You'll get
+          access as soon as it's approved.
+        </p>
+        <Button variant="outline" onClick={async () => { await signOut(); nav({ to: "/" }); }}>
+          Sign out
+        </Button>
       </div>
     );
   }
